@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Mono.Cecil;
+using Mono.Cecil.Cil;
 
 public partial class InnerWeaver
 {
@@ -15,6 +16,7 @@ public partial class InnerWeaver
         };
 
         ModuleDefinition.Assembly.Name.PublicKey = PublicKey;
+
         ModuleDefinition.Write(AssemblyFilePath, parameters);
         Logger.LogDebug($"Finished writing assembly {stopwatch.ElapsedMilliseconds}ms.");
     }
