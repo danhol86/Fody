@@ -1,0 +1,5 @@
+﻿<Project>
+  <ItemGroup>
+    <WeaverFiles Include="$(MsBuildThisFileDirectory)bin\Debug\net472\PdbTest.Fody.dll" />
+  </ItemGroup>
+</Project>

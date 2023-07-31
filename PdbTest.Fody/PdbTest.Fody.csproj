@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFrameworks>netstandard2.0;net472</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FodyHelpers\FodyHelpers.csproj" />
+    <ProjectReference Include="..\FodyIsolated\FodyIsolated.csproj" />
+    <ProjectReference Include="..\Fody\Fody.csproj" />
+  </ItemGroup>
+
+</Project>

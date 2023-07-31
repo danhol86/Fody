@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>netstandard2.0;net472</TargetFrameworks>
+    <PathMap>$(MSBuildThisFileDirectory)=C:\MyNewPath</PathMap>
+    <DebugType>full</DebugType>
+  </PropertyGroup>
+
+  <Import Project="Fody.targets" />
+  <Import Project="..\PdbTest.Fody\PdbTest.Fody.props" />
+
+  <ItemGroup>
+    <ProjectReference Include="..\Fody\Fody.csproj" />
+    <ProjectReference Include="..\PdbTest.Fody\PdbTest.Fody.csproj" />
+  </ItemGroup>
+
+</Project>
