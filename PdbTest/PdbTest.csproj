@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFrameworks>net472</TargetFrameworks>
     <PathMap>$(MSBuildThisFileDirectory)=C:\MyNewPath</PathMap>
-    <DebugType>portable</DebugType>
+    <DebugType>full</DebugType>
   </PropertyGroup>
 
   <Import Project="Fody.targets" />
