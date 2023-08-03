@@ -8,7 +8,14 @@
     <DebugType>full</DebugType>
   </PropertyGroup>
 
-  <Import Project="Fody.targets" />
-  <Import Project="..\PdbTest.Fody\PdbTest.Fody.props" />
+  <Import Project="PdbTest.Fody.props" />
+
+  <ItemGroup>
+    <PackageReference Include="Fody" Version="6.8.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Mono.Cecil" Version="0.11.5" />
+  </ItemGroup>
 
 </Project>

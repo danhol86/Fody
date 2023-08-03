@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Fody;
@@ -21,25 +22,63 @@ namespace PdbTest.Fody
 
         public override void Execute()
         {
-            var mys = new MySReader(ModuleDefinition.SymbolReader);
+            Debugger.Launch();
+            var myp = ModuleDefinition.FileName;
+            var csum = CalculateMD5Checksum(myp);
+            var newstr = @"C:\CS\" + csum + @"\";
+
+            var dictmap = new Dictionary<string, string> { { ProjectDirectoryPath, newstr } };
+
+            var mys = new MySReader(ModuleDefinition.SymbolReader, dictmap);
 
             var type = ModuleDefinition.GetType();
             var propertyInfo = type.GetField("symbol_reader", BindingFlags.NonPublic | BindingFlags.Instance);
-            propertyInfo.SetValue(ModuleDefinition, mys);
+            //propertyInfo.SetValue(ModuleDefinition, mys);
+
+            var assembly = (AssemblyDefinition)type.GetField("assembly", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(ModuleDefinition);
+            var stringType = assembly.MainModule.TypeSystem.String;
+            var attribute = new CustomAttribute(assembly.MainModule.ImportReference(typeof(System.Reflection.AssemblyMetadataAttribute).GetConstructor(new Type[] { typeof(string), typeof(string) })));
+            attribute.ConstructorArguments.Add(new CustomAttributeArgument(stringType, "PreFodyHash"));
+            attribute.ConstructorArguments.Add(new CustomAttributeArgument(stringType, csum));
+            assembly.CustomAttributes.Add(attribute);
+            //assembly.Write();
         }
 
         public override IEnumerable<string> GetAssembliesForScanning()
         {
             yield break;
         }
+
+        public static string CalculateMD5Checksum(byte[] filebyte)
+        {
+            using (var md5 = MD5.Create())
+            {
+                var hash = md5.ComputeHash(filebyte);
+                return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+            }
+        }
+
+        private static string CalculateMD5Checksum(string filePath)
+        {
+            using (var sha256 = MD5.Create())
+            {
+                using (var stream = File.OpenRead(filePath))
+                {
+                    byte[] hash = sha256.ComputeHash(stream);
+                    return BitConverter.ToString(hash).Replace("-", "").ToLower();
+                }
+            }
+        }
     }
 
     public class MySReader : ISymbolReader
     {
         ISymbolReader existing;
-        public MySReader(ISymbolReader existing)
+        Dictionary<string, string> ProjectDirectoryPath;
+        public MySReader(ISymbolReader existing, Dictionary<string, string> ProjectDirectoryPath)
         {
             this.existing = existing;
+            this.ProjectDirectoryPath = ProjectDirectoryPath;
         }
 
         public void Dispose()
@@ -49,7 +88,7 @@ namespace PdbTest.Fody
 
         public ISymbolWriterProvider GetWriterProvider()
         {
-            return new MyWriterProvider(existing.GetWriterProvider());
+            return new MyWriterProvider(existing.GetWriterProvider(), ProjectDirectoryPath);
         }
         public bool ProcessDebugHeader(ImageDebugHeader header)
         {
@@ -65,28 +104,32 @@ namespace PdbTest.Fody
     public class MyWriterProvider : ISymbolWriterProvider
     {
         ISymbolWriterProvider existing;
-        public MyWriterProvider(ISymbolWriterProvider existing)
+        Dictionary<string, string> ProjectDirectoryPath;
+        public MyWriterProvider(ISymbolWriterProvider existing, Dictionary<string, string> ProjectDirectoryPath)
         {
+            this.ProjectDirectoryPath = ProjectDirectoryPath;
             this.existing = existing;
         }
 
         public ISymbolWriter GetSymbolWriter(ModuleDefinition module, string fileName)
         {
-            return new MyWriter(existing.GetSymbolWriter(module, fileName));
+            return new MyWriter(existing.GetSymbolWriter(module, fileName), ProjectDirectoryPath);
         }
         public ISymbolWriter GetSymbolWriter(ModuleDefinition module, Stream symbolStream)
         {
-            return new MyWriter(existing.GetSymbolWriter(module, symbolStream));
+            return new MyWriter(existing.GetSymbolWriter(module, symbolStream), ProjectDirectoryPath);
         }
     }
 
     public class MyWriter : ISymbolWriter
     {
         ISymbolWriter existing;
-
-        public MyWriter(ISymbolWriter existing)
+        Dictionary<string, string> ProjectDirectoryPath;
+        
+        public MyWriter(ISymbolWriter existing, Dictionary<string, string> ProjectDirectoryPath)
         {
             this.existing = existing;
+            this.ProjectDirectoryPath = ProjectDirectoryPath;
         }
 
         public void Dispose()
@@ -100,14 +143,16 @@ namespace PdbTest.Fody
             var mydata = dheader.Entries.First();
             var d = mydata.Data;
 
-            Debugger.Launch();
-
             var str = Encoding.Default.GetString(d);
-            var find = Encoding.UTF8.GetBytes("D:\\Repos\\repos\\fody\\PdbTest");
-            var replace = Encoding.UTF8.GetBytes("C");
-            var result = ReplaceInByteArray(d, find, replace);
 
-            var header = new ImageDebugHeader(new ImageDebugHeaderEntry(mydata.Directory, result));
+            foreach (var item in ProjectDirectoryPath)
+            {
+                var find = Encoding.UTF8.GetBytes(item.Key);
+                var replace = Encoding.UTF8.GetBytes(item.Value);
+                d = ReplaceInByteArray(d, find, replace);
+            }            
+
+            var header = new ImageDebugHeader(new ImageDebugHeaderEntry(mydata.Directory, d));
 
             return header;
         }
