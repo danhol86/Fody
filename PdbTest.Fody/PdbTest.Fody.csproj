@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\cecil\Mono.Cecil.csproj" />
     <ProjectReference Include="..\FodyHelpers\FodyHelpers.csproj" />
     <ProjectReference Include="..\FodyIsolated\FodyIsolated.csproj" />
     <ProjectReference Include="..\Fody\Fody.csproj" />

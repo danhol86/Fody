@@ -3,16 +3,12 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>net472</TargetFrameworks>
+    <Deterministic>true</Deterministic>
     <PathMap>$(MSBuildThisFileDirectory)=C:\MyNewPath</PathMap>
     <DebugType>full</DebugType>
   </PropertyGroup>
 
   <Import Project="Fody.targets" />
   <Import Project="..\PdbTest.Fody\PdbTest.Fody.props" />
-
-  <ItemGroup>
-    <ProjectReference Include="..\Fody\Fody.csproj" />
-    <ProjectReference Include="..\PdbTest.Fody\PdbTest.Fody.csproj" />
-  </ItemGroup>
 
 </Project>

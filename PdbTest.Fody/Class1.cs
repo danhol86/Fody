@@ -9,22 +9,25 @@ using System.Threading.Tasks;
 using Fody;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using static InnerWeaver;
 
 namespace PdbTest.Fody
 {
     public class ModuleWeaver : BaseModuleWeaver
     {
+        public ModuleWeaver()
+        {
+        }
+
         public override void Execute()
         {
-            Debugger.Launch();
             var mys = new MySReader(ModuleDefinition.SymbolReader);
 
             var type = ModuleDefinition.GetType();
-            // Get the PropertyInfo for the property "symbol_reader"
             var propertyInfo = type.GetField("symbol_reader", BindingFlags.NonPublic | BindingFlags.Instance);
             propertyInfo.SetValue(ModuleDefinition, mys);
-
         }
+
         public override IEnumerable<string> GetAssembliesForScanning()
         {
             yield break;
@@ -46,13 +49,13 @@ namespace PdbTest.Fody
 
         public ISymbolWriterProvider GetWriterProvider()
         {
-            return existing.GetWriterProvider();
+            return new MyWriterProvider(existing.GetWriterProvider());
         }
         public bool ProcessDebugHeader(ImageDebugHeader header)
         {
             return existing.ProcessDebugHeader(header);
         }
-        
+
         public MethodDebugInformation Read(MethodDefinition method)
         {
             return existing.Read(method);
@@ -80,7 +83,7 @@ namespace PdbTest.Fody
     public class MyWriter : ISymbolWriter
     {
         ISymbolWriter existing;
-        
+
         public MyWriter(ISymbolWriter existing)
         {
             this.existing = existing;
@@ -92,19 +95,68 @@ namespace PdbTest.Fody
         }
         public ImageDebugHeader GetDebugHeader()
         {
-            return existing.GetDebugHeader();
+            var dheader = existing.GetDebugHeader();
+
+            var mydata = dheader.Entries.First();
+            var d = mydata.Data;
+
+            Debugger.Launch();
+
+            var str = Encoding.Default.GetString(d);
+            var find = Encoding.UTF8.GetBytes("D:\\Repos\\repos\\fody\\PdbTest");
+            var replace = Encoding.UTF8.GetBytes("C");
+            var result = ReplaceInByteArray(d, find, replace);
+
+            var header = new ImageDebugHeader(new ImageDebugHeaderEntry(mydata.Directory, result));
+
+            return header;
         }
+
+        public static byte[] ReplaceInByteArray(byte[] source, byte[] find, byte[] replace)
+        {
+            var result = new List<byte>();
+            for (var i = 0; i < source.Length; ++i)
+            {
+                if (IsMatch(source, i, find))
+                {
+                    foreach (var b in replace)
+                    {
+                        result.Add(b);
+                    }
+                    i += find.Length - 1;
+                }
+                else
+                {
+                    result.Add(source[i]);
+                }
+            }
+            return result.ToArray();
+        }
+
+        public static bool IsMatch(byte[] source, int position, byte[] find)
+        {
+            if (find.Length > (source.Length - position))
+                return false;
+
+            for (var i = 0; i < find.Length; i++)
+                if (source[position + i] != find[i])
+                    return false;
+
+            return true;
+        }
+
         public ISymbolReaderProvider GetReaderProvider()
         {
             return existing.GetReaderProvider();
         }
         public void Write(MethodDebugInformation info)
         {
-
+            existing.Write(info);
         }
         public void Write()
         {
-
+            existing.Write();
         }
     }
+
 }

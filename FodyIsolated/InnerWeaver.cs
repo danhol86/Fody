@@ -91,6 +91,7 @@ public partial class InnerWeaver :
     public TypeCache TypeCache = null!;
     public void Execute()
     {
+        Debugger.Launch();
         ResolveEventHandler assemblyResolve = CurrentDomain_AssemblyResolve;
         try
         {
