@@ -22,7 +22,6 @@ namespace PdbTest.Fody
 
         public override void Execute()
         {
-            Debugger.Launch();
             var myp = ModuleDefinition.FileName;
             var csum = CalculateMD5Checksum(myp);
             var newstr = @"C:\CS\" + csum + @"\";
